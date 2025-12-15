@@ -1,5 +1,5 @@
 streamlit
 pdfplumber
-weasyprint
 openai
 jinja2
+reportlab
