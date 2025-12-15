@@ -1,5 +1,4 @@
 streamlit
-pdfplumber
-openai
 jinja2
-reportlab
+openai
+weasyprint
