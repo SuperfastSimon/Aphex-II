@@ -1,6 +1,4 @@
-# Log 2025-12-15 09:02
-cv_maker_app.py
-pip install streamlit pdfplumber weasyprint openai jinja2
+# Log 2025-12-15 09:09
 # cv_maker_app.py
 import streamlit as st
 import pdfplumber, base64, tempfile, re, os, json
@@ -16,8 +14,7 @@ TEMPLATE_DIR = "templates"
 os.makedirs(TEMPLATE_DIR, exist_ok=True)
 
 TEMPLATE_FILES = {
-    "modern.html": """
-<!doctype html><html><head><meta charset="utf-8"/>
+    "modern.html": """<!doctype html><html><head><meta charset="utf-8"/>
 <style>
 :root { --accent: {{ accent }}; --text:#111827; --bg:#ffffff; }
 body { font-family: Inter, Arial, sans-serif; margin:40px; color:var(--text); }
@@ -32,10 +29,8 @@ h2 { color:var(--accent); font-size:16px; margin:8px 0; }
 </div>
 <h2>Ervaring</h2><div>{{ data.experience | replace('\\n','<br/>') | safe }}</div>
 <h2>Skills</h2><ul>{% for s in data.skills %}<li>{{ s }}</li>{% endfor %}</ul>
-</body></html>
-""",
-    "classic.html": """
-<!doctype html><html><head><meta charset="utf-8"/>
+</body></html>""",
+    "classic.html": """<!doctype html><html><head><meta charset="utf-8"/>
 <style>
 :root { --accent: {{ accent }}; }
 body { font-family: "Times New Roman", serif; margin:40px; }
@@ -45,10 +40,8 @@ h2 { font-size:14px; color:var(--accent); margin-bottom:6px; }
 <div class="name">{{ data.name }}</div><div>{{ data.education }}</div>
 <h2>Ervaring</h2><div>{{ data.experience | replace('\\n','<br/>') | safe }}</div>
 <h2>Skills</h2><p>{{ data.skills | join(', ') }}</p>
-</body></html>
-""",
-    "ats.html": """
-<!doctype html><html><head><meta charset="utf-8"/>
+</body></html>""",
+    "ats.html": """<!doctype html><html><head><meta charset="utf-8"/>
 <style>
 body { font-family: Arial, sans-serif; margin:40px; }
 h1 { font-size:20px; } h2 { font-size:14px; margin-top:12px; }
@@ -56,8 +49,7 @@ h1 { font-size:20px; } h2 { font-size:14px; margin-top:12px; }
 <h1>{{ data.name }}</h1><p>{{ data.education }}</p>
 <h2>Ervaring</h2><div>{{ data.experience | replace('\\n','<br/>') | safe }}</div>
 <h2>Skills</h2><ul>{% for s in data.skills %}<li>{{ s }}</li>{% endfor %}</ul>
-</body></html>
-"""
+</body></html>"""
 }
 
 # Schrijf templates naar bestanden als ze nog niet bestaan
@@ -162,4 +154,8 @@ if st.button("Genereer suggesties"):
         data["experience"] = suggestions[0]
 
 st.subheader("Live preview")
-pdf_path, html_preview = render_pdf(data, template_choice, accent
+pdf_path, html_preview = render_pdf(data, template_choice, accent)
+st.components.v1.html(html_preview, height=700, scrolling=True)
+if st.button("Download PDF"):
+    with open(pdf_path,"rb") as f:
+        st.download_button("Download CV als PDF", f, file_name="cv_output.pdf")
