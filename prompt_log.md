@@ -1,10 +1,11 @@
-# Log 2025-12-15 09:09
+# Log 2025-12-15 09:16
 # cv_maker_app.py
 import streamlit as st
 import pdfplumber, base64, tempfile, re, os, json
-from weasyprint import HTML
 from openai import OpenAI
 from jinja2 import Environment, FileSystemLoader
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
 
 # --- AI client ---
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -52,7 +53,7 @@ h1 { font-size:20px; } h2 { font-size:14px; margin-top:12px; }
 </body></html>"""
 }
 
-# Schrijf templates naar bestanden als ze nog niet bestaan
+# Schrijf templates naar bestanden
 for fname, content in TEMPLATE_FILES.items():
     fpath = os.path.join(TEMPLATE_DIR, fname)
     if not os.path.exists(fpath):
@@ -89,13 +90,24 @@ def extract_cv_data(file_obj):
     if edu_match: data["education"] = edu_match.group(2).strip()
     return data
 
-def render_pdf(data, template_name, accent):
-    env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))
-    tpl = env.get_template(template_name)
-    html = tpl.render(data=data, accent=accent)
+def render_pdf_reportlab(data, accent):
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
-    HTML(string=html).write_pdf(tmp.name)
-    return tmp.name, html
+    c = canvas.Canvas(tmp.name, pagesize=A4)
+    width, height = A4
+    c.setFont("Helvetica-Bold", 20)
+    c.drawString(50, height-50, data.get("name",""))
+    c.setFont("Helvetica", 12)
+    c.drawString(50, height-80, f"Opleiding: {data.get('education','')}")
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(50, height-120, "Ervaring:")
+    c.setFont("Helvetica", 12)
+    c.drawString(50, height-140, data.get("experience",""))
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(50, height-180, "Skills:")
+    c.setFont("Helvetica", 12)
+    c.drawString(50, height-200, ", ".join(data.get("skills",[])))
+    c.save()
+    return tmp.name
 
 def improve_text(text, style="concise", language="nl", template="modern.html"):
     if not text.strip(): return []
@@ -146,16 +158,4 @@ user_text = st.text_area("Tekst voor verbetering", value=data.get("experience","
 style = st.selectbox("Stijl", ["concise","formal","creative"])
 language = st.selectbox("Taal", ["nl","en"])
 if st.button("Genereer suggesties"):
-    suggestions = improve_text(user_text, style=style, language=language, template=template_choice)
-    st.write("### AI suggesties")
-    for i,s in enumerate(suggestions,1):
-        st.markdown(f"**Variant {i}:** {s}")
-    if suggestions and st.button("Gebruik eerste suggestie"):
-        data["experience"] = suggestions[0]
-
-st.subheader("Live preview")
-pdf_path, html_preview = render_pdf(data, template_choice, accent)
-st.components.v1.html(html_preview, height=700, scrolling=True)
-if st.button("Download PDF"):
-    with open(pdf_path,"rb") as f:
-        st.download_button("Download CV als PDF", f, file_name="cv_output.pdf")
+    suggestions
