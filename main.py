@@ -1,3 +1,4 @@
+# main.py
 import streamlit as st
 import pdfplumber, base64, tempfile, re, os, json
 from weasyprint import HTML
@@ -29,7 +30,7 @@ h2 { color:var(--accent); font-size:16px; margin:8px 0; }
 <h2>Ervaring</h2><div>{{ data.experience | replace('\n','<br/>') | safe }}</div>
 <h2>Skills</h2><ul>{% for s in data.skills %}<li>{{ s }}</li>{% endfor %}</ul>
 </body></html>
-""",
+"",
     "classic.html": """
 <!doctype html><html><head><meta charset="utf-8"/>
 <style>
@@ -42,7 +43,7 @@ h2 { font-size:14px; color:var(--accent); margin-bottom:6px; }
 <h2>Ervaring</h2><div>{{ data.experience | replace('\n','<br/>') | safe }}</div>
 <h2>Skills</h2><p>{{ data.skills | join(', ') }}</p>
 </body></html>
-""",
+"",
     "ats.html": """
 <!doctype html><html><head><meta charset="utf-8"/>
 <style>
@@ -53,7 +54,7 @@ h1 { font-size:20px; } h2 { font-size:14px; margin-top:12px; }
 <h2>Ervaring</h2><div>{{ data.experience | replace('\n','<br/>') | safe }}</div>
 <h2>Skills</h2><ul>{% for s in data.skills %}<li>{{ s }}</li>{% endfor %}</ul>
 </body></html>
-"""
+""
 }
 
 # Schrijf templates naar bestanden als ze nog niet bestaan
