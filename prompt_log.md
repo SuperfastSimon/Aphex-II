@@ -1,4 +1,6 @@
-# Log 2025-12-15 08:57
+# Log 2025-12-15 09:02
+cv_maker_app.py
+pip install streamlit pdfplumber weasyprint openai jinja2
 # cv_maker_app.py
 import streamlit as st
 import pdfplumber, base64, tempfile, re, os, json
