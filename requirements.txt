@@ -1,4 +1,5 @@
 streamlit
-jinja2
 openai
-weasyprint
+duckduckgo-search
+requests
+
