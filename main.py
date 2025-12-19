@@ -16,89 +16,72 @@ st.set_page_config(
 # --- 2. CSS STYLING ---
 st.markdown("""
     <style>
-    /* Dark Mode kleuren */
     .stApp { background-color: #0e1117; color: #c9d1d9; }
-    
-    /* Input velden styling */
     .stTextInput>div>div>input { background-color: #161b22; color: white; border: 1px solid #30363d; }
     .stTextArea>div>div>textarea { background-color: #161b22; color: white; border: 1px solid #30363d; }
-    
-    /* Footer verbergen */
     footer { visibility: hidden; }
-    
-    /* Inputbalk vastzetten onderaan (Mobile Native feel) */
     .stChatInput { position: fixed; bottom: 0; padding-bottom: 20px; background-color: #0e1117; z-index: 100; }
-    
-    /* Marges voor leesbaarheid */
     .main { padding-bottom: 80px; }
     </style>
 """, unsafe_allow_html=True)
 
 # --- 3. GEHEUGEN ---
 if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "assistant", "content": "Aphex II Online. Configureer mij in het menu en druk op 'Toepassen'."}]
+    st.session_state.messages = [{"role": "assistant", "content": "Aphex II Online. GPT-5 Ready."}]
 if "cost" not in st.session_state:
     st.session_state.cost = 0.0000
 
-# --- 4. SIDEBAR MENU (MET FORMULIER) ---
+# --- 4. SIDEBAR MENU ---
 with st.sidebar:
     st.title("⚙️ CONFIGURATIE")
     
-    # We gebruiken een FORM zodat de pagina niet steeds herlaadt tijdens het typen
     with st.form("config_form"):
-        # A. API KEY
         api_key_input = st.text_input("OpenAI API Key", type="password", placeholder="sk-...")
         
         st.markdown("---")
         
-        # B. MODEL SELECTIE
+        # MODEL SELECTIE (PUUR)
+        # Deze strings gaan direct naar de API zonder aanpassingen
         model_options = ["gpt-5", "gpt-5-mini", "gpt-4o", "gpt-4o-mini", "Custom / Eigen Model"]
         selected_option = st.selectbox("Kies Model", model_options)
         
-        # Custom model veld
         custom_model_input = ""
         if selected_option == "Custom / Eigen Model":
-            custom_model_input = st.text_input("Vul model ID in", placeholder="bv. o1-preview")
+            custom_model_input = st.text_input("Vul exact Model ID in", placeholder="bv. o1-preview")
         
         st.markdown("---")
-        st.caption("KENNIS & ZINTUIGEN")
+        st.caption("KENNIS")
         
-        # C. TOOLS
         use_internet = st.toggle("🌍 Live Internet (DuckDuckGo)", value=False)
         gdoc_link = st.text_input("📄 Google Doc Link", placeholder="https://docs.google.com/...")
         manual_context = st.text_area("📝 Eigen Kennis / Context", placeholder="Plak hier tekst...", height=100)
         
         st.markdown("---")
         
-        # D. PERSONA
-        persona_input = st.text_area("🎭 Persona", value="Je bent Aphex II. Antwoord direct, intelligent en in het Nederlands.")
+        persona_input = st.text_area("🎭 Persona", value="Je bent Aphex II.")
         
-        # DE APPLY KNOP
-        submitted = st.form_submit_button("✅ INSTELLINGEN TOEPASSEN")
+        # APPLY KNOP
+        submitted = st.form_submit_button("✅ TOEPASSEN")
 
-    # --- LOGICA NA HET DRUKKEN OP TOEPASSEN ---
-    # We stellen de variabelen in die we in het script gebruiken
+    # --- LOGICA (PUUR) ---
     if api_key_input:
         openai.api_key = api_key_input
     
-    # Model logica bepalen
+    # KIES HET MODEL (Geen fallback naar 4o meer)
     if selected_option == "Custom / Eigen Model":
         real_model = custom_model_input if custom_model_input else "gpt-4o"
-    elif "gpt-5" in selected_option:
-        real_model = "gpt-4o" # Fallback/Simulatie
-        if submitted: st.toast("GPT-5 simulatie actief (via GPT-4o)", icon="ℹ️")
     else:
+        # Dit stuurt keihard 'gpt-5' of 'gpt-5-mini' als je dat kiest
         real_model = selected_option
         
     if submitted:
-        st.toast("Instellingen opgeslagen!", icon="✅")
+        st.toast(f"Model actief: {real_model}", icon="🚀")
 
     st.markdown("---")
     
-    # E. KOSTEN & DOWNLOAD (Buiten het formulier voor directe actie)
     st.metric("Sessie Kosten", f"${st.session_state.cost:.4f}")
     
-    # Chat Log downloaden
+    # Download Chat
     chat_log_text = ""
     for msg in st.session_state.messages:
         chat_log_text += f"[{msg['role'].upper()}]: {msg['content']}\n\n"
@@ -130,14 +113,13 @@ def search_web(query):
         return "\n".join([f"- {r['title']}: {r['body']}" for r in results])
     except: return None
 
-# --- 6. HOOFDSCHERM (CHAT UI) ---
+# --- 6. CHAT UI ---
 st.title("APHEX II")
 
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# --- 7. INPUT LOGICA ---
 if prompt := st.chat_input("Typ een bericht..."):
     
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -145,12 +127,11 @@ if prompt := st.chat_input("Typ een bericht..."):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        with st.status("🧠 Aphex is aan het denken...", expanded=True) as status:
+        with st.status(f"🧠 Request naar {real_model}...", expanded=True) as status:
             context_text = ""
             
-            # Kennis Ophalen (Gebruikt de variabelen uit het formulier)
             if manual_context:
-                status.write("📚 Eigen Context lezen...")
+                status.write("📚 Context lezen...")
                 context_text += f"\n[CONTEXT]:\n{manual_context}\n"
             
             if gdoc_link:
@@ -159,8 +140,6 @@ if prompt := st.chat_input("Typ een bericht..."):
                 if doc: 
                     context_text += f"\n[DOCS]:\n{doc}\n"
                     status.write("✅ Doc geladen")
-                else:
-                    status.write("⚠️ Doc fout (check link).")
             
             if use_internet:
                 status.write(f"🌍 Zoeken: '{prompt}'...")
@@ -168,19 +147,18 @@ if prompt := st.chat_input("Typ een bericht..."):
                 if web: 
                     context_text += f"\n[WEB]:\n{web}\n"
                     status.write("✅ Web resultaten")
-                else:
-                    status.write("⚠️ Geen resultaten.")
 
-            status.write(f"🤖 Antwoord formuleren ({real_model})...")
+            status.write("🤖 Antwoord genereren...")
             
             if not api_key_input:
-                st.error("⚠️ Geen API Key! Vul in menu in en druk op TOEPASSEN.")
+                st.error("⚠️ Geen API Key!")
                 st.stop()
             
             try:
                 sys_msg = persona_input
                 if context_text: sys_msg += f"\n\nCONTEXT:\n{context_text}"
                 
+                # ECHTE API CALL (Puur)
                 stream = openai.chat.completions.create(
                     model=real_model,
                     messages=[{"role": "system", "content": sys_msg}, *st.session_state.messages],
@@ -192,5 +170,5 @@ if prompt := st.chat_input("Typ een bericht..."):
                 st.session_state.messages.append({"role": "assistant", "content": response})
                 
             except Exception as e:
-                st.error(f"Error: {e}")
-
+                # Hier zie je de harde error als de API het model niet pakt
+                st.error(f"❌ API Fout: {e}")
