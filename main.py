@@ -1,8 +1,3 @@
-# main.py
-import os, tempfile, base64, json
-from jinja2 import Environment, FileSystemLoader
-from weasyprint import HTML
-
 # ======================================================
 # 🚀 APHEX II: STREAMLIT EDITION (Ultimate Mobile)
 # ======================================================
