@@ -8,91 +8,238 @@ from openai import OpenAI
 # --- AI client ---
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# --- Templates ---
-TEMPLATE_DIR = "templates"
-os.makedirs(TEMPLATE_DIR, exist_ok=True)
 
-TEMPLATES = {
-    "modern_sidebar.html": __MODERN_TEMPLATE__,
-    "classic_minimal.html": __CLASSIC_TEMPLATE__,
-    "ats_friendly.html": __ATS_TEMPLATE__,
-}
-for fname, content in TEMPLATES.items():
-    with open(os.path.join(TEMPLATE_DIR, fname), "w", encoding="utf-8") as f:
-        f.write(content.strip())
+# 🚀 Aphex II - AI Command Center
 
-PALETTES = {
-    "Neutral": "#374151", "Blue": "#2b6cb0", "Green": "#059669",
-    "Warm": "#b45309", "Monochrome": "#111827", "High Contrast": "#000000"
-}
+Aphex II is een geavanceerde AI-interface gebouwd met Streamlit. Het is geoptimaliseerd voor mobiel gebruik (native feel) en biedt uitgebreide functionaliteiten.
 
-def file_to_base64(file) -> str:
-    return base64.b64encode(file.read()).decode("utf-8")
+## Functionaliteiten
 
+# ======================================================
+# 🚀 APHEX II: STREAMLIT EDITION (Ultimate Mobile)
+# ======================================================
+import os, subprocess, time
 
-# Function for rendering PDF
-def render_pdf(data, template_name, accent):
-    env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))
-    tpl = env.get_template(template_name)
-    html = tpl.render(data=data, accent=accent)
-    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
-    HTML(string=html).write_pdf(tmp.name)
-    return tmp.name, html
+# 1. SETUP & INSTALLATIE
+print("⚙️  SYSTEM BOOT: Installing Streamlit & Dependencies...")
+os.system('pip install streamlit openai duckduckgo-search requests > /dev/null 2>&1')
+os.system('npm install -g localtunnel > /dev/null 2>&1')
 
+# IP OPHALEN (JE WACHTWOORD)
+try:
+    public_ip = subprocess.check_output("curl -s ipv4.icanhazip.com", shell=True).decode("utf-8").strip()
+except:
+    public_ip = "UNKNOWN"
 
-# Function to improve text using AI
-def improve_text(text, style="concise", language="nl"):
-    if not text.strip(): return []
-    prompt = f"Verbeter deze CV-tekst zodat hij {style}, ATS-vriendelijk en in {language} is. Geef drie varianten."
-    resp = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role":"user","content":prompt + "\n\nTekst:\n" + text}],
-        max_tokens=400, temperature=0.6
-    )
-    content = resp.choices[0].message.content
+print("\n" + "▓"*60)
+print(f"🔑 WACHTWOORD VOOR TUNNEL: {public_ip}")
+print("▓"*60 + "\n")
+
+# ======================================================
+# 2. DE STREAMLIT APPLICATIE (Wordt weggeschreven naar app.py)
+# ======================================================
+app_code = """
+import streamlit as st
+import openai
+from duckduckgo_search import DDGS
+import requests
+import time
+
+# --- PAGINA CONFIGURATIE (Dark Mode & Mobile) ---
+st.set_page_config(
+    page_title="Aphex II",
+    page_icon="🧠",
+    layout="wide",
+    initial_sidebar_state="collapsed" # Menu standaard dicht op mobiel
+)
+
+# Custom CSS voor de 'Hacker' look en verbergen van footer
+st.markdown(\"\"\"
+    <style>
+    .stApp { background-color: #0e1117; color: #c9d1d9; }
+    .stTextInput>div>div>input { background-color: #161b22; color: white; border: 1px solid #30363d; }
+    header { visibility: hidden; }
+    footer { visibility: hidden; }
+    .stChatInput { position: fixed; bottom: 0; }
+    </style>
+\"\"\", unsafe_allow_html=True)
+
+# --- SESSIE STATUS (Geheugen) ---
+if "messages" not in st.session_state:
+    st.session_state.messages = [{"role": "assistant", "content": "Aphex II Online. Klaar voor input."}]
+if "cost" not in st.session_state:
+    st.session_state.cost = 0.0000
+
+# --- ZIJBALK (INSTELLINGEN) ---
+with st.sidebar:
+    st.title("⚙️ CONFIGURATIE")
+    
+    # 1. API Key
+    api_key = st.text_input("OpenAI API Key", type="password", placeholder="sk-...")
+    if api_key:
+        openai.api_key = api_key
+    
+    # 2. Model Keuze
+    model_display = st.selectbox("Kies Model", 
+        ["GPT-5-Mini (Simulated)", "GPT-5 (Simulated)", "GPT-4o", "GPT-4o-mini", "Claude 3.5 (Simulated)"])
+    
+    # Mapping naar echte API modellen om crashes te voorkomen
+    real_model = "gpt-4o-mini" # Default fallback
+    if "GPT-4o" in model_display: real_model = "gpt-4o"
+    if "GPT-5" in model_display: real_model = "gpt-4o" # Mappen naar beste beschikbaar
+    
+    # 3. Kennis & Tools
+    st.markdown("---")
+    st.caption("KENNIS & ZINTUIGEN")
+    
+    use_internet = st.toggle("🌍 Live Internet (DuckDuckGo)", value=False)
+    gdoc_link = st.text_input("📄 Google Doc Link", placeholder="https://docs.google.com/...")
+    manual_context = st.text_area("📝 Kennis Context", placeholder="Plak hier tekst/data...", height=100)
+    
+    # 4. Persona
+    st.markdown("---")
+    persona = st.text_area("🎭 Persona / Systeemrol", value="Je bent Aphex II. Antwoord direct, intelligent en in het Nederlands.")
+    
+    # 5. Stats & Kill Switch
+    st.markdown("---")
+    st.metric("Sessie Kosten", f"${st.session_state.cost:.4f}")
+    
+    if st.button("☢️ NOODREM / RESET", type="primary"):
+        st.session_state.messages = []
+        st.session_state.cost = 0.0
+        st.rerun()
+
+# --- LOGICA FUNCTIES ---
+def get_google_doc(url):
     try:
-        parsed = json.loads(content)
-        if isinstance(parsed, list): return parsed
-    except Exception:
-        return [p.strip() for p in content.split("\n") if p.strip()]
-    return []
+        if "/edit" in url: url = url.split("/edit")[0] + "/export?format=txt"
+        response = requests.get(url)
+        if response.status_code == 200:
+            return response.text[:2000] # Limiet voor veiligheid
+    except:
+        return None
+    return None
 
+def search_web(query):
+    try:
+        results = DDGS().text(query, max_results=3)
+        return "\\n".join([f"- {r['title']}: {r['body']}" for r in results])
+    except:
+        return None
 
-# --- Streamlit UI ---
-st.set_page_config(page_title="Creatieve CV Maker", layout="wide")
-st.title("Creatieve CV Maker")
+# --- HOOFDSCHERM (CHAT) ---
+st.title("APHEX II")
 
-template_choice = st.sidebar.selectbox("Kies template", list(TEMPLATES.keys()))
-accent_choice = st.sidebar.selectbox("Kleurpalet", list(PALETTES.keys())+["Custom"])
-accent = st.sidebar.color_picker("Kies accentkleur", "#2b6cb0") if accent_choice=="Custom" else PALETTES[accent_choice]
-uploaded_photo = st.sidebar.file_uploader("Upload profielfoto", type=["jpg","jpeg","png"])
+# Toon historie
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
 
-data = {
-    "name": st.text_input("Naam"),
-    "address": st.text_input("Adres"),
-    "email": st.text_input("E-mail"),
-    "summary": st.text_area("Persoonlijk profiel", height=100),
-    "experience": st.text_area("Ervaring", height=150),
-    "education": st.text_area("Opleiding", height=100),
-    "skills": [s.strip() for s in st.text_input("Skills (komma-gescheiden)").split(",") if s.strip()]
-}
-if uploaded_photo: data["photo"] = file_to_base64(uploaded_photo)
+# --- INPUT VERWERKING ---
+if prompt := st.chat_input("Typ een bericht..."):
+    # 1. Toon gebruikersbericht
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
 
-st.subheader("AI Tekstsuggesties")
-user_text = st.text_area("Tekst voor verbetering", value=data.get("experience",""))
-style = st.selectbox("Stijl", ["concise","formal","creative"])
-language = st.selectbox("Taal", ["nl","en"])
-if st.button("Genereer suggesties"):
-    suggestions = improve_text(user_text, style=style, language=language)
-    st.write("### AI suggesties")
-    for i,s in enumerate(suggestions,1):
-        st.markdown(f"**Variant {i}:** {s}")
-    if suggestions and st.button("Gebruik eerste suggestie"):
-        data["experience"] = suggestions[0]
+    # 2. AI Denkt (Chain of Thought Visualisatie)
+    with st.chat_message("assistant"):
+        message_placeholder = st.empty()
+        full_response = ""
+        
+        # 'Expander' laat gedachtes zien zonder de chat te vervuilen
+        with st.status("🧠 Aphex is aan het denken...", expanded=True) as status:
+            
+            context_text = ""
+            
+            # A. Check Manual Context
+            if manual_context:
+                status.write("📚 Handmatige kennis laden...")
+                context_text += f"\\n[CONTEXT]:\\n{manual_context}\\n"
+            
+            # B. Check Google Doc
+            if gdoc_link:
+                status.write("📄 Google Doc ophalen...")
+                doc_content = get_google_doc(gdoc_link)
+                if doc_content:
+                    context_text += f"\\n[DOCS]:\\n{doc_content}...\\n"
+                    status.write("✅ Doc gelezen.")
+                else:
+                    status.write("⚠️ Doc fout (check link/rechten).")
+            
+            # C. Check Internet
+            if use_internet:
+                status.write(f"🌍 Zoeken op DuckDuckGo naar: '{prompt}'...")
+                web_results = search_web(prompt)
+                if web_results:
+                    context_text += f"\\n[WEB]:\\n{web_results}\\n"
+                    status.write("✅ Web resultaten gevonden.")
+                else:
+                    status.write("⚠️ Geen resultaten.")
+            
+            # D. Call OpenAI
+            status.write(f"🤖 Antwoord genereren met {real_model}...")
+            
+            if not api_key:
+                full_response = "⚠️ **LET OP:** Geen API Key ingevuld in het menu linksboven (☰). Ik kan nu niet antwoorden."
+                status.update(label="❌ Geen sleutel", state="error")
+            else:
+                try:
+                    # System prompt samenstellen
+                    sys_msg = persona
+                    if context_text:
+                        sys_msg += f"\\n\\nGEBRUIK DEZE CONTEXT:\\n{context_text}"
+                    
+                    stream = openai.chat.completions.create(
+                        model=real_model,
+                        messages=[
+                            {"role": "system", "content": sys_msg},
+                            *st.session_state.messages
+                        ],
+                        stream=True
+                    )
+                    
+                    # Stream het antwoord naar het scherm
+                    full_response = st.write_stream(stream)
+                    
+                    # Update kosten (Schatting)
+                    st.session_state.cost += 0.002 
+                    status.update(label="✅ Klaar", state="complete", expanded=False)
+                    
+                except Exception as e:
+                    full_response = f"❌ API Fout: {str(e)}"
+                    status.update(label="Error", state="error")
 
-st.subheader("Live preview")
-pdf_path, html_preview = render_pdf(data, template_choice, accent)
-st.components.v1.html(html_preview, height=700, scrolling=True)
-if st.button("Download PDF"):
-    with open(pdf_path,"rb") as f:
-        st.download_button("Download CV als PDF", f, file_name="cv_output.pdf")
+    # 3. Sla antwoord op in historie
+    st.session_state.messages.append({"role": "assistant", "content": full_response})
+    st.rerun() # Refresh om kosten update in sidebar te tonen
+"""
+
+# Schrijf de app code naar een bestand
+with open("app.py", "w", encoding='utf-8') as f:
+    f.write(app_code)
+
+# ======================================================
+# 3. STARTEN
+# ======================================================
+print("🚀 Streamlit Server wordt gestart...")
+
+# 1. Start Streamlit op de achtergrond
+subprocess.Popen(["streamlit", "run", "app.py", "--server.port", "8501"])
+time.sleep(3)
+
+# 2. Start Tunnel
+print("🔗 Tunnel wordt opgezet...")
+process = subprocess.Popen(['npx', 'localtunnel', '--port', '8501'], stdout=subprocess.PIPE)
+
+while True:
+    line = process.stdout.readline()
+    if line:
+        decoded = line.decode("utf-8").strip()
+        if "your url is" in decoded.lower():
+            url = decoded.split("is: ")[1].strip()
+            print(f"\n⚡ APHEX II STREAMLIT LINK: {url}")
+            print(f"🔑 WACHTWOORD: {public_ip}")
+            print("\n(Klik op de link en vul het IP in bij 'Tunnel Password')")
+            break
+            
