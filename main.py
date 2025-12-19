@@ -27,7 +27,7 @@ st.markdown("""
 
 # --- 3. GEHEUGEN ---
 if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "assistant", "content": "Aphex II Online. GPT-5 Ready."}]
+    st.session_state.messages = [{"role": "assistant", "content": "Aphex II Online. Ready."}]
 if "cost" not in st.session_state:
     st.session_state.cost = 0.0000
 
@@ -40,8 +40,7 @@ with st.sidebar:
         
         st.markdown("---")
         
-        # MODEL SELECTIE (PUUR)
-        # Deze strings gaan direct naar de API zonder aanpassingen
+        # MODEL SELECTIE
         model_options = ["gpt-5", "gpt-5-mini", "gpt-4o", "gpt-4o-mini", "Custom / Eigen Model"]
         selected_option = st.selectbox("Kies Model", model_options)
         
@@ -60,28 +59,25 @@ with st.sidebar:
         
         persona_input = st.text_area("🎭 Persona", value="Je bent Aphex II.")
         
-        # APPLY KNOP
         submitted = st.form_submit_button("✅ TOEPASSEN")
 
-    # --- LOGICA (PUUR) ---
+    # --- LOGICA ---
     if api_key_input:
         openai.api_key = api_key_input
     
-    # KIES HET MODEL (Geen fallback naar 4o meer)
     if selected_option == "Custom / Eigen Model":
         real_model = custom_model_input if custom_model_input else "gpt-4o"
     else:
-        # Dit stuurt keihard 'gpt-5' of 'gpt-5-mini' als je dat kiest
         real_model = selected_option
         
     if submitted:
-        st.toast(f"Model actief: {real_model}", icon="🚀")
+        st.toast(f"Model: {real_model}", icon="🚀")
 
     st.markdown("---")
     
     st.metric("Sessie Kosten", f"${st.session_state.cost:.4f}")
     
-    # Download Chat
+    # Download
     chat_log_text = ""
     for msg in st.session_state.messages:
         chat_log_text += f"[{msg['role'].upper()}]: {msg['content']}\n\n"
@@ -127,8 +123,9 @@ if prompt := st.chat_input("Typ een bericht..."):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        with st.status(f"🧠 Request naar {real_model}...", expanded=True) as status:
-            context_text = ""
+        # 1. HET DENKPROCES (Ingeklapt blokje)
+        context_text = ""
+        with st.status(f"🧠 Context verzamelen...", expanded=True) as status:
             
             if manual_context:
                 status.write("📚 Context lezen...")
@@ -148,27 +145,29 @@ if prompt := st.chat_input("Typ een bericht..."):
                     context_text += f"\n[WEB]:\n{web}\n"
                     status.write("✅ Web resultaten")
 
-            status.write("🤖 Antwoord genereren...")
+            status.update(label="Gedachtes (Klik om te openen)", state="complete", expanded=False)
+
+        # 2. HET ANTWOORD (Nu Buiten het status blok, dus direct zichtbaar!)
+        if not api_key_input:
+            st.error("⚠️ Geen API Key!")
+            st.stop()
+        
+        try:
+            sys_msg = persona_input
+            if context_text: sys_msg += f"\n\nCONTEXT:\n{context_text}"
             
-            if not api_key_input:
-                st.error("⚠️ Geen API Key!")
-                st.stop()
+            stream = openai.chat.completions.create(
+                model=real_model,
+                messages=[{"role": "system", "content": sys_msg}, *st.session_state.messages],
+                stream=True
+            )
             
-            try:
-                sys_msg = persona_input
-                if context_text: sys_msg += f"\n\nCONTEXT:\n{context_text}"
-                
-                # ECHTE API CALL (Puur)
-                stream = openai.chat.completions.create(
-                    model=real_model,
-                    messages=[{"role": "system", "content": sys_msg}, *st.session_state.messages],
-                    stream=True
-                )
-                response = st.write_stream(stream)
-                st.session_state.cost += 0.002
-                status.update(label="Klaar", state="complete", expanded=False)
-                st.session_state.messages.append({"role": "assistant", "content": response})
-                
-            except Exception as e:
-                # Hier zie je de harde error als de API het model niet pakt
-                st.error(f"❌ API Fout: {e}")
+            # Hier wordt het antwoord getypt in de open ruimte
+            response = st.write_stream(stream)
+            
+            st.session_state.cost += 0.002
+            st.session_state.messages.append({"role": "assistant", "content": response})
+            
+        except Exception as e:
+            st.error(f"❌ API Fout: {e}")
+
