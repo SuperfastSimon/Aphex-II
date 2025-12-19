@@ -46,13 +46,13 @@ with st.sidebar:
     
     # MODEL KEUZE
     model_display = st.selectbox("Kies Model", 
-        ["GPT-4o", "GPT-4o-mini", "GPT-4-Turbo", "GPT-3.5-Turbo"])
+        ["GPT-5", "GPT-5-mini", "GPT-4o-mini",
     
     # Mapping
-    real_model = "gpt-4o-mini"
-    if "GPT-4o" in model_display: real_model = "gpt-4o"
-    if "GPT-4-Turbo" in model_display: real_model = "gpt-4-turbo"
-    if "GPT-3.5" in model_display: real_model = "gpt-3.5-turbo"
+    real_model = "GPT-5-mini"
+    if "GPT-5" in model_display: real_model = "gpt-5"
+    if "GPT-5-mini" in model_display: real_model = "GPT-5-mini"
+    if "GPT-4o-mini" in model_display: real_model = "GPT-4o-mini"
     
     st.markdown("---")
     st.caption("TOOLS & KENNIS")
