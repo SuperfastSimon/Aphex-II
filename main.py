@@ -9,7 +9,7 @@ st.set_page_config(
     page_title="Aphex II",
     page_icon="🧠",
     layout="wide",
-    initial_sidebar_state="expanded"  # <--- HIERMEE STAAT HIJ STANDAARD OPEN
+    initial_sidebar_state="expanded"
 )
 
 # --- CSS STYLING ---
@@ -21,7 +21,7 @@ st.markdown("""
     /* Input velden mooier maken */
     .stTextInput>div>div>input { background-color: #161b22; color: white; border: 1px solid #30363d; }
     
-    /* Alleen de footer verbergen, NIET de header (zodat je het menu ziet) */
+    /* Footer verbergen */
     footer { visibility: hidden; }
     
     /* De typbalk vastzetten onderaan (Mobile Native feel) */
@@ -39,20 +39,26 @@ if "cost" not in st.session_state:
 with st.sidebar:
     st.title("⚙️ CONFIGURATIE")
     
-    # API KEY
+    # 1. API KEY (Cruciaal)
     api_key = st.text_input("OpenAI API Key", type="password", placeholder="sk-...")
     if api_key:
         openai.api_key = api_key
     
-    # MODEL KEUZE
-    model_display = st.selectbox("Kies Model")
-        ["GPT-5", "GPT-5-mini", "GPT-4o-mini"]
+    st.markdown("---")
     
-    # Mapping
-    real_model = "GPT-5-mini"
-    if "GPT-5" in model_display: real_model = "gpt-5"
-    if "GPT-5-mini" in model_display: real_model = "GPT-5-mini"
-    if "GPT-4o-mini" in model_display: real_model = "GPT-4o-mini"
+    # 2. MODEL KEUZE (Aangepast naar wens)
+    model_options = ["gpt-5", "gpt-5-mini", "gpt-4o", "gpt-4o-mini", "Custom / Eigen Model"]
+    selected_option = st.selectbox("Kies Model", model_options)
+    
+    # Logica: Als custom gekozen is, toon invoerveld. Anders gebruik selectie.
+    if selected_option == "Custom / Eigen Model":
+        real_model = st.text_input("Vul modelnaam in", placeholder="bv. o1-preview")
+        if not real_model: 
+            real_model = "gpt-4o" # Fallback als leeg
+    else:
+        real_model = selected_option
+    
+    st.caption(f"Actief model: {real_model}")
     
     st.markdown("---")
     st.caption("TOOLS & KENNIS")
@@ -139,7 +145,7 @@ if prompt := st.chat_input("Typ een bericht..."):
                 else:
                     status.write("⚠️ Geen resultaten gevonden.")
 
-            status.write("🤖 Antwoord formuleren...")
+            status.write(f"🤖 Antwoord formuleren met {real_model}...")
             
             # Check API Key
             if not api_key:
