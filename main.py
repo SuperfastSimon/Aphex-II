@@ -2,18 +2,6 @@
 import os, tempfile, base64, json
 from jinja2 import Environment, FileSystemLoader
 from weasyprint import HTML
-import streamlit as st
-from openai import OpenAI
-
-# --- AI client ---
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-
-# 🚀 Aphex II - AI Command Center
-
-Aphex II is een geavanceerde AI-interface gebouwd met Streamlit. Het is geoptimaliseerd voor mobiel gebruik (native feel) en biedt uitgebreide functionaliteiten.
-
-## Functionaliteiten
 
 # ======================================================
 # 🚀 APHEX II: STREAMLIT EDITION (Ultimate Mobile)
