@@ -46,7 +46,7 @@ with st.sidebar:
     
     # MODEL KEUZE
     model_display = st.selectbox("Kies Model", 
-        ["GPT-5", "GPT-5-mini", "GPT-4o-mini",
+        ["GPT-5", "GPT-5-mini", "GPT-4o-mini"]
     
     # Mapping
     real_model = "GPT-5-mini"
