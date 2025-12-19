@@ -10,7 +10,7 @@ st.set_page_config(
     page_title="Aphex II",
     page_icon="🧠",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed" # <--- DE ENIGE WIJZIGING: Menu start nu dicht
 )
 
 # --- 2. CSS STYLING ---
@@ -27,7 +27,7 @@ st.markdown("""
 
 # --- 3. GEHEUGEN ---
 if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "assistant", "content": "Aphex II Online. Ready."}]
+    st.session_state.messages = [{"role": "assistant", "content": "Aphex II Online. Open het menu linksboven (>) om te configureren."}]
 if "cost" not in st.session_state:
     st.session_state.cost = 0.0000
 
@@ -65,6 +65,7 @@ with st.sidebar:
     if api_key_input:
         openai.api_key = api_key_input
     
+    # KIES HET MODEL (PUUR, GEEN MAPPING)
     if selected_option == "Custom / Eigen Model":
         real_model = custom_model_input if custom_model_input else "gpt-4o"
     else:
@@ -131,6 +132,45 @@ if prompt := st.chat_input("Typ een bericht..."):
                 status.write("📚 Context lezen...")
                 context_text += f"\n[CONTEXT]:\n{manual_context}\n"
             
+            if gdoc_link:
+                status.write("📄 Docs ophalen...")
+                doc = get_google_doc(gdoc_link)
+                if doc: 
+                    context_text += f"\n[DOCS]:\n{doc}\n"
+                    status.write("✅ Doc geladen")
+            
+            if use_internet:
+                status.write(f"🌍 Zoeken: '{prompt}'...")
+                web = search_web(prompt)
+                if web: 
+                    context_text += f"\n[WEB]:\n{web}\n"
+                    status.write("✅ Web resultaten")
+
+            status.update(label="Gedachtes (Klik om te openen)", state="complete", expanded=False)
+
+        # 2. HET ANTWOORD (Buiten het status blok)
+        if not api_key_input:
+            st.error("⚠️ Geen API Key!")
+            st.stop()
+        
+        try:
+            sys_msg = persona_input
+            if context_text: sys_msg += f"\n\nCONTEXT:\n{context_text}"
+            
+            stream = openai.chat.completions.create(
+                model=real_model,
+                messages=[{"role": "system", "content": sys_msg}, *st.session_state.messages],
+                stream=True
+            )
+            
+            # Hier wordt het antwoord getypt in de open ruimte
+            response = st.write_stream(stream)
+            
+            st.session_state.cost += 0.002
+            st.session_state.messages.append({"role": "assistant", "content": response})
+            
+        except Exception as e:
+            st.error(f"❌ API Fout: {e}")
             if gdoc_link:
                 status.write("📄 Docs ophalen...")
                 doc = get_google_doc(gdoc_link)
